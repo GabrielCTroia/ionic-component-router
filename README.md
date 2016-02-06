@@ -23,7 +23,7 @@ Besides, ionic v1 apps that are not ready to migrate yet can make use this appro
 
 ### To Do:    
 
-- Ask more people if they think this can be useful!!! Please share your thoughts with me at @gabrielctroia on twitter.
+- Ask more people if they think this can be useful!!! Please share your thoughts with me at [@gabrielctroia](https://twitter.com/gabrielctroia) on twitter.
 
 - To make the migration easier from ui-router, it can support an already defined state
 - Optimize the changes made to the DOM
