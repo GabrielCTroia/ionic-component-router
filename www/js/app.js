@@ -7,7 +7,7 @@
 angular.module('starter', [
   'ionic',
   'starter.controllers',
-  'nav',
+  'ionic-component-router',
 ])
 
 .run(function($ionicPlatform) {
