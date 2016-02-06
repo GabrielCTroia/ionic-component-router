@@ -1,5 +1,5 @@
 class Nav {
-  constructor($compile, $scope, $wrapperElm) {
+  constructor($compile, $scope, $wrapperElm, angular, $controller) {
     this._history = [];
     this._rendered = {};
     this._onChangeSubscribers = [];
@@ -7,6 +7,7 @@ class Nav {
     this._$parentScope = $scope;
     this._$wrapperElm = $wrapperElm;
     this._$compile = $compile;
+    this._$controller = $controller;
   }
 
   push(viewController, params = {}) {
@@ -40,10 +41,17 @@ class Nav {
     Array.prototype.map.call(this._onChangeSubscribers, f => f(this._history));
   }
 
-  _compile({template}, params) {
+  _compile({template, controller}, params) {
     const localScope = this._$parentScope.$new();
     localScope.nav = this;
     localScope.params = params;
+
+    if (controller) {
+      const c = this._$controller(controller, {
+        $scope: localScope
+      });
+      template.data('$ngControllerController', c);
+    }
 
     return this._$compile(template)(localScope);
   }
@@ -69,14 +77,14 @@ class Nav {
       template.attr('nav', 'nav');
       template.attr('params', 'params');
 
-      // if view controller pair
+      // if view-controller pair
     } else {
-      template = vc.template;
+      template = angular.element(vc.template);
     }
 
     //
 
-    const compiled = this._compile({template}, params);
+    const compiled = this._compile({template, controller: vc.controller}, params);
 
     // append to the DOM only if the VC is not root
     if (this.history.length > 0) {
@@ -84,22 +92,6 @@ class Nav {
     }
 
     rendered[nextId] = compiled;
-
-    //return rendered[nextId] = $compile(tpl)(localScope);
-
-    // from ui-router
-    //var locals = {};
-    //var link = $compile($element.contents());
-
-    //if (locals.$$controller) {
-    //  locals.$scope = scope;
-    //  var controller = $controller(locals.$$controller, locals);
-    //  if (locals.$$controllerAs) {
-    //    scope[locals.$$controllerAs] = controller;
-    //  }
-    //  $element.data('$ngControllerController', controller);
-    //  $element.children().data('$ngControllerController', controller);
-    //}
   };
 
   get history() {
@@ -120,7 +112,7 @@ const PageAViewController = {
           <button ng-click="nav.push('second-page', 'working')">Page B Directive</button
         </ion-view>
   `,
-  controller: [($scope) => {
+  controller: ['$scope', ($scope) => {
     console.log('page A view controller', $scope);
     $scope.localVar = 'This is a local var defined in the controller!';
   }]
@@ -146,7 +138,7 @@ angular.module('nav', [])
 
           return {
             pre($scope, $elm) {
-              const nav = new Nav($compile, $scope, $elm);
+              const nav = new Nav($compile, $scope, $elm, angular, $controller);
 
               nav.push({root: $child});
               nav.onChange((history) => {
@@ -200,7 +192,7 @@ angular.module('nav', [])
           First Page with params: {{ ::params }}
           <br/>
 
-          <button ng-click="nav.push('second-page', 'working')">Second Page (directive)</button
+          <button ng-click="nav.push('second-pages', 'working')">Second Page (directive)</button
         </ion-view>
       `,
       scope: {
