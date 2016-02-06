@@ -40,16 +40,6 @@ class Nav {
     Array.prototype.map.call(this._onChangeSubscribers, f => f(this._history));
   }
 
-  _normalizeViewController(vc) {
-    console.log('normalize', vc);
-    if (typeof vc === 'string') {
-      return {template: `<${vc}></${vc}>`, controller: null}
-    } else if (vc.root) {
-      return {template: vc.root};
-    }
-    return vc;
-  }
-
   _compile({template}, params) {
     const localScope = this._$parentScope.$new();
     localScope.nav = this;
@@ -65,15 +55,13 @@ class Nav {
       return this._rendered[nextId];
     }
 
-
-
     // normalize vc
 
     let template;
     // if directive
     if (typeof vc === 'string') {
       template = `<${vc} id="${nextId}" nav="nav" params="params"></${vc}>`;
-    // if root
+      // if root
     } else if (vc.root) {
       template = vc.root;
 
@@ -81,14 +69,14 @@ class Nav {
       template.attr('nav', 'nav');
       template.attr('params', 'params');
 
-    // if view controller pair
+      // if view controller pair
     } else {
       template = vc.template;
     }
 
     //
 
-    const compiled = this._compile({template});
+    const compiled = this._compile({template}, params);
 
     // append to the DOM only if the VC is not root
     if (this.history.length > 0) {
@@ -122,10 +110,19 @@ class Nav {
 const PageAViewController = {
 
   template: `
-    Page A view controller
+    <ion-view>
+          <button ng-click="nav.pop()"> back</button>
+          <br/>
+          View Controller: {{ ::params }}
+          <br/>
+          Local Var: {{ localVar }}
+          <br/>
+          <button ng-click="nav.push('second-page', 'working')">Page B Directive</button
+        </ion-view>
   `,
   controller: [($scope) => {
     console.log('page A view controller', $scope);
+    $scope.localVar = 'This is a local var defined in the controller!';
   }]
 };
 
@@ -143,7 +140,6 @@ angular.module('nav', [])
         restrict: 'E',
         priority: 99999, // highest importance
         terminal: true, // needs to be terminal so the child directive will not render 2 times
-        template: ``,
         scope: {},
         compile(tElm) {
           let $child = tElm.children();
@@ -170,13 +166,11 @@ angular.module('nav', [])
       //replace: 'true',
       template: `
         <ion-view>
-
-          <button ng-click="nav.pop()"> back</button>
           <br/>
           app directive
           <br/>
 
-          <button ng-click="pushB()">Component B</button>
+          <button ng-click="pushFirstPage()">Component B</button>
           <button ng-click="pushViewCtrl()">Page A ViewController</button>
         </ion-view>
       `,
@@ -189,9 +183,9 @@ angular.module('nav', [])
       controller: ['$scope', ($scope) => {
         console.log('app nav', $scope, $scope.nav);
 
-        $scope.pushB = $scope.nav.push.bind($scope.nav, 'first-page', {});
+        $scope.pushFirstPage = $scope.nav.push.bind($scope.nav, 'first-page', {});
 
-        $scope.pushViewCtrl = $scope.nav.push.bind($scope.nav, PageAViewController, {});
+        $scope.pushViewCtrl = $scope.nav.push.bind($scope.nav, PageAViewController, {x: '23'});
       }]
     })
   ])
@@ -202,7 +196,11 @@ angular.module('nav', [])
       template: `
         <ion-view>
           <button ng-click="nav.pop()"> back</button>
+          <br/>
           First Page with params: {{ ::params }}
+          <br/>
+
+          <button ng-click="nav.push('second-page', 'working')">Second Page (directive)</button
         </ion-view>
       `,
       scope: {
@@ -212,7 +210,6 @@ angular.module('nav', [])
         next: '&',
       },
       controller: ['$scope', ($scope) => {
-
       }]
     })
   ])
@@ -221,12 +218,17 @@ angular.module('nav', [])
     () => ({
       template: `
         <ion-view>
+        <button ng-click="nav.pop()"> back</button>
+          <br/>
           Second Page with params: {{ ::params }}
         </ion-view>
       `,
-      scope: {},
+      scope: {
+        params: '=',
+        nav: '=',
+      },
       controller: ['$scope', ($scope) => {
-
+        console.log('second page', $scope);
       }]
     })
   ])
